@@ -57,6 +57,7 @@ local srcs_api = {
   { helptag = "nvim-tree-api-marks",      section = "API: marks",      path = base .. "_meta/api/marks.lua", },
   { helptag = "nvim-tree-api-node",       section = "API: node",       path = base .. "_meta/api/node.lua", },
   { helptag = "nvim-tree-api-tree",       section = "API: tree",       path = base .. "_meta/api/tree.lua", },
+  { helptag = "nvim-tree-api-workspace",  section = "API: workspace",  path = base .. "_meta/api/workspace.lua", },
 
   { helptag = "nvim-tree-class",          section = "PLACEHOLDER",     path = placeholder, },
 }

@@ -296,6 +296,12 @@ M.d = { -- config-default-start
   bookmarks = {
     persist = false,
   },
+  workspace = {
+    enable = true,
+    persist = true,
+    restrict_root_change = true,
+    restore_on_start = true,
+  },
   experimental = {
   },
   log = {
@@ -361,6 +367,9 @@ local ACCEPTED_TYPES = {
     },
   },
   bookmarks = {
+    persist = { "boolean", "string" },
+  },
+  workspace = {
     persist = { "boolean", "string" },
   },
 }

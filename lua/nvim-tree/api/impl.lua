@@ -230,9 +230,18 @@ function M.hydrate_post_setup(api)
   api.node.run.system                          = _n(function(n) require("nvim-tree.actions.node.system-open").fn(n) end)
   api.node.show_info_popup                     = _n(function(n) require("nvim-tree.actions.node.file-popup").toggle_file_info(n) end)
 
-  api.tree.change_root                         = __(function(path) require("nvim-tree.actions.tree.change-dir").fn(path) end)
-  api.tree.change_root_to_node                 = en(function(e, n) e:change_dir_to_node(n) end)
-  api.tree.change_root_to_parent               = en(function(e, n) e:dir_up(n) end)
+  api.tree.change_root                         = __(function(path)
+    if require("nvim-tree.actions.tree.change-dir").blocked_by_workspace() then return end
+    require("nvim-tree.actions.tree.change-dir").fn(path)
+  end)
+  api.tree.change_root_to_node                 = en(function(e, n)
+    if require("nvim-tree.actions.tree.change-dir").blocked_by_workspace() then return end
+    e:change_dir_to_node(n)
+  end)
+  api.tree.change_root_to_parent               = en(function(e, n)
+    if require("nvim-tree.actions.tree.change-dir").blocked_by_workspace() then return end
+    e:dir_up(n)
+  end)
   api.tree.close                               = __(function() require("nvim-tree.view").close() end)
   api.tree.close_in_all_tabs                   = __(function() require("nvim-tree.view").close_all_tabs() end)
   api.tree.close_in_this_tab                   = __(function() require("nvim-tree.view").close_this_tab_only() end)
@@ -252,6 +261,29 @@ function M.hydrate_post_setup(api)
   api.tree.toggle                              = __(function(o) require("nvim-tree.actions.tree.toggle").fn(o) end)
   api.tree.toggle_help                         = __(function() require("nvim-tree.help").toggle() end)
   api.tree.winid                               = __(function(o) return require("nvim-tree.view").winid(o) end)
+
+  api.workspace.select                         = __(function() require("nvim-tree.workspace").select() end)
+  api.workspace.add_folder                     = _n(function(n)
+    local path
+    if n then
+      local dir = n:as(require("nvim-tree.node.directory"))
+      if dir then
+        path = dir.absolute_path
+      elseif n.parent then
+        path = n.parent.absolute_path
+      end
+    end
+    require("nvim-tree.workspace").prompt_add_folder(path)
+  end)
+  api.workspace.remove_folder                  = _n(function(n)
+    if n and n.absolute_path then
+      require("nvim-tree.workspace").remove_folder(n.absolute_path)
+    end
+  end)
+  api.workspace.save_as                        = __(function(name) require("nvim-tree.workspace").save_as(name) end)
+  api.workspace.exit                           = __(function() require("nvim-tree.workspace").exit() end)
+  api.workspace.list                           = __(function() return require("nvim-tree.workspace").list() end)
+  api.workspace.edit_config                    = __(function() require("nvim-tree.workspace").edit_config() end)
 
   -- Map all legacy functions to implementations
   require("nvim-tree.legacy").map_api(api)

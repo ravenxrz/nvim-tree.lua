@@ -15,6 +15,7 @@
 ---- [nvim-tree-api-marks]
 ---- [nvim-tree-api-node]
 ---- [nvim-tree-api-tree]
+---- [nvim-tree-api-workspace]
 ---
 ---Modules are accessed via `api.<module>.<function>`
 ---
@@ -88,6 +89,7 @@ local api = {
   marks = require("nvim-tree._meta.api.marks"),
   node = require("nvim-tree._meta.api.node"),
   tree = require("nvim-tree._meta.api.tree"),
+  workspace = require("nvim-tree._meta.api.workspace"),
 
   Decorator = require("nvim-tree._meta.api.decorator"),
 

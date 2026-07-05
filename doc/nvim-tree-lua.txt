@@ -143,6 +143,9 @@ Show the mappings:  `g?`
  `F`               n    Live Filter: Clear         |nvim_tree.api.filter.live.clear()|
  `f`               n    Live Filter: Start         |nvim_tree.api.filter.live.start()|
  `g?`              n    Help                       |nvim_tree.api.tree.toggle_help()|
+ `gws`             n    Workspace: Select          |nvim_tree.api.workspace.select()|
+ `gwa`             n    Workspace: Add Folder      |nvim_tree.api.workspace.add_folder()|
+ `gwd`             n    Workspace: Remove Folder   |nvim_tree.api.workspace.remove_folder()|
  `gy`              nx   Copy Absolute Path         |nvim_tree.api.fs.copy.absolute_path()|
  `ge`              n    Copy Basename              |nvim_tree.api.fs.copy.basename()|
  `H`               n    Toggle Filter: Dotfiles    |nvim_tree.api.filter.dotfiles.toggle()|
@@ -437,6 +440,10 @@ You are encouraged to copy these to your {on_attach} function. >lua
   vim.keymap.set("n",          "F",              api.filter.live.clear,              opts("Live Filter: Clear"))
   vim.keymap.set("n",          "f",              api.filter.live.start,              opts("Live Filter: Start"))
   vim.keymap.set("n",          "g?",             api.tree.toggle_help,               opts("Help"))
+  vim.keymap.set("n",          "gws",            api.workspace.select,               opts("Workspace: Select"))
+  vim.keymap.set("n",          "gwa",            api.workspace.add_folder,           opts("Workspace: Add Folder"))
+  vim.keymap.set("n",          "gwd",            api.workspace.remove_folder,        opts("Workspace: Remove Folder"))
+  vim.keymap.set("n",          "gwe",            api.workspace.edit_config,          opts("Workspace: Edit Config"))
   vim.keymap.set({ "n", "x" }, "gy",             api.fs.copy.absolute_path,          opts("Copy Absolute Path"))
   vim.keymap.set("n",          "ge",             api.fs.copy.basename,               opts("Copy Basename"))
   vim.keymap.set("n",          "H",              api.filter.dotfiles.toggle,         opts("Toggle Filter: Dotfiles"))
@@ -1872,6 +1879,31 @@ Config: bookmarks                                 *nvim-tree-config-bookmarks*
       • {persist}?  (`boolean|string`) (default: `false`)
 
 ==============================================================================
+Config: workspace                                 *nvim-tree-config-workspace*
+
+*nvim_tree.config.workspace*
+    VSCode style multi-root workspaces: show project folders from different
+    locations as sibling top-level nodes in a single tree.
+
+    Optionally {persist} saved workspaces to a json file:
+    • `true` use default: `stdpath("data") .. "/nvim-tree-workspaces.json"`
+    • `false` do not persist
+    • `string` absolute path of your choice
+
+    While a workspace is active the tree root cannot be changed when
+    {restrict_root_change} is enabled.
+
+    When {restore_on_start} is enabled the last active workspace is restored
+    automatically on a bare startup (`nvim` or `nvim .`, without file
+    arguments). Requires {persist}.
+
+    Fields: ~
+      • {enable}?                (`boolean`) (default: `true`)
+      • {persist}?               (`boolean|string`) (default: `true`)
+      • {restrict_root_change}?  (`boolean`) (default: `true`)
+      • {restore_on_start}?      (`boolean`) (default: `true`)
+
+==============================================================================
 Config: help                                           *nvim-tree-config-help*
 
 *nvim_tree.config.help*
@@ -2254,6 +2286,7 @@ The API is separated into multiple modules:
 • |nvim-tree-api-marks|
 • |nvim-tree-api-node|
 • |nvim-tree-api-tree|
+• |nvim-tree-api-workspace|
 
 Modules are accessed via `api.<module>.<function>`
 
@@ -3112,6 +3145,60 @@ winid({opts})                                     *nvim_tree.api.tree.winid()*
 
     Return: ~
         (`integer?`) |window-ID|, nil if tree is not visible.
+
+
+==============================================================================
+API: workspace                                       *nvim-tree-api-workspace*
+
+VSCode style multi-root workspaces. A workspace is a named set of folder paths
+displayed as sibling top-level nodes in a single tree. While a workspace is
+active the tree root cannot be changed.
+
+select()                                    *nvim_tree.api.workspace.select()*
+    Present a picker of saved workspaces and activate the chosen one.
+
+add_folder({path})                      *nvim_tree.api.workspace.add_folder()*
+    Prompt for a folder path and add it to the active workspace, entering
+    workspace mode when not already active. The prompt is prefilled with the
+    directory of the node under the cursor when {path} is nil, otherwise the
+    current working directory.
+
+    The workspace is saved automatically: the first save prompts once for a
+    name, subsequent changes persist without prompting.
+
+    Parameters: ~
+      • {path}  (`string?`) absolute or relative folder path used to prefill
+                the prompt
+
+remove_folder({path})                *nvim_tree.api.workspace.remove_folder()*
+    Remove a workspace folder root, prompting for confirmation to avoid
+    accidental removal. Uses the node under the cursor when {path} is nil.
+    Changes are persisted automatically.
+
+    Parameters: ~
+      • {path}  (`string?`) absolute or relative folder path
+
+save_as({name})                            *nvim_tree.api.workspace.save_as()*
+    Save the active folder set as a named workspace, persisting it to disk.
+    Saving is normally automatic; this is rarely needed. Prompts for a name
+    when {name} is nil and the workspace is unnamed.
+
+    Parameters: ~
+      • {name}  (`string?`)
+
+exit()                                        *nvim_tree.api.workspace.exit()*
+    Exit workspace mode, returning to a single-root tree at the current
+    working directory.
+
+list()                                        *nvim_tree.api.workspace.list()*
+    Retrieve all saved workspaces.
+
+    Return: ~
+        (`nvim_tree.Workspace[]`)
+
+edit_config()                          *nvim_tree.api.workspace.edit_config()*
+    Open the workspaces persistence file for editing. The file is created
+    first when it does not yet exist. Does nothing when {persist} is disabled.
 
 
 ==============================================================================

@@ -41,6 +41,7 @@ markdown-toc --maxdepth=2 -i README.md
   * [Setup](#setup)
   * [Help](#help)
   * [Custom Mappings](#custom-mappings)
+  * [Workspaces](#workspaces)
   * [Highlight Groups](#highlight-groups)
 - [Commands](#commands)
 - [Roadmap](#roadmap)
@@ -141,6 +142,34 @@ Show the mappings:  `g?`
     ---
   })
 ```
+
+## Workspaces
+
+nvim-tree supports VSCode style multi-root workspaces: several project folders from different filesystem locations are shown as sibling top-level nodes in a single tree.
+
+While a workspace is active the tree root cannot be changed. Workspaces are persisted to a json file (`stdpath("data") .. "/nvim-tree-workspaces.json"` by default) and may be reopened later via the picker. Saving is automatic: the first time you add a folder you are prompted once for a workspace name, and subsequent changes persist without prompting. The last active workspace is restored automatically on a bare startup (`nvim` or `nvim .`); disable with `workspace.restore_on_start = false`.
+
+Default mappings inside the tree:
+
+- `gws` select a saved workspace
+- `gwa` prompt for a folder path and add it to the workspace
+- `gwd` remove the workspace folder root under the cursor (with confirmation)
+- `gwe` open the workspaces config file for editing
+
+Configure via `setup`:
+
+```lua
+  require("nvim-tree").setup({
+    workspace = {
+      enable = true,
+      persist = true,              -- true | false | "/path/to/workspaces.json"
+      restrict_root_change = true,
+      restore_on_start = true,     -- restore the last workspace on bare `nvim`
+    },
+  })
+```
+
+See [:help nvim-tree-config-workspace](doc/nvim-tree-lua.txt) and [:help nvim-tree-api-workspace](doc/nvim-tree-lua.txt).
 
 ## Highlight Groups
 

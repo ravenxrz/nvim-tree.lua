@@ -37,6 +37,7 @@ local find_file = require("nvim-tree.actions.finders.find-file")
 ---@field sorters Sorter
 ---@field marks Marks
 ---@field clipboard Clipboard
+---@field workspace nvim_tree.Workspace? active workspace when in multi-root workspace mode
 local Explorer = RootNode:extend()
 
 ---@class Explorer
@@ -44,6 +45,7 @@ local Explorer = RootNode:extend()
 
 ---@class (exact) ExplorerArgs
 ---@field path string
+---@field workspace nvim_tree.Workspace?
 
 ---@protected
 ---@param args ExplorerArgs
@@ -59,6 +61,7 @@ function Explorer:new(args)
 
   self.open         = true
   self.opts         = config.g
+  self.workspace    = args.workspace
 
 
   self.sorters     = Sorter({ explorer = self })
@@ -72,7 +75,11 @@ function Explorer:new(args)
 
   self:create_autocmds()
 
-  self:_load(self)
+  if self.workspace then
+    self:load_workspace()
+  else
+    self:_load(self)
+  end
 end
 
 function Explorer:destroy()
@@ -371,6 +378,69 @@ function Explorer:_load(node)
   self:explore(node, project, self)
 end
 
+---Compute display names for workspace folders, disambiguating duplicate
+---basenames by prefixing with the containing directory name.
+---@private
+---@param folders string[]
+---@return table<string, string> display name by absolute path
+function Explorer:workspace_display_names(folders)
+  local basenames = {}
+  for _, folder in ipairs(folders) do
+    local base = vim.fn.fnamemodify(folder, ":t")
+    basenames[base] = (basenames[base] or 0) + 1
+  end
+
+  local names = {}
+  for _, folder in ipairs(folders) do
+    local base = vim.fn.fnamemodify(folder, ":t")
+    if basenames[base] > 1 then
+      local parent = vim.fn.fnamemodify(folder, ":h:t")
+      names[folder] = string.format("%s/%s", parent, base)
+    else
+      names[folder] = base
+    end
+  end
+  return names
+end
+
+---Build one top-level DirectoryNode per workspace folder and populate each.
+---The synthetic root is never scanned.
+---@private
+function Explorer:load_workspace()
+  local profile = log.profile_start("load workspace")
+
+  self.nodes = {}
+
+  local folders = self.workspace and self.workspace.folders or {}
+  local names = self:workspace_display_names(folders)
+
+  for _, folder in ipairs(folders) do
+    -- TODO remove once 0.12 is the minimum neovim version
+    ---@diagnostic disable-next-line: param-type-mismatch
+    local stat = vim.uv.fs_lstat(folder)
+    if stat and (stat.type == "directory" or stat.type == "link") then
+      local child = node_factory.create({
+        explorer      = self,
+        parent        = self,
+        absolute_path = folder,
+        name          = names[folder] or vim.fn.fnamemodify(folder, ":t"),
+        fs_stat       = stat,
+      })
+      local dir = child and child:as(DirectoryNode)
+      if dir then
+        table.insert(self.nodes, dir)
+        local cwd = dir.link_to or dir.absolute_path
+        local project = git.load_project(cwd)
+        self:explore(dir, project, self)
+      end
+    else
+      require("nvim-tree.notify").warn(string.format("Workspace folder not found: %s", folder))
+    end
+  end
+
+  log.profile_end(profile)
+end
+
 ---@private
 ---@param nodes_by_path Node[]
 ---@param node_ignored boolean
@@ -489,6 +559,11 @@ end
 function Explorer:refresh_nodes(projects)
   Iterator.builder({ self })
     :applier(function(n)
+      -- never rescan the synthetic root in workspace mode: its children are
+      -- the workspace folders, not the contents of a single directory
+      if self.workspace and n == self then
+        return
+      end
       local dir = n:as(DirectoryNode)
       if dir then
         local toplevel = git.get_toplevel(dir.cwd or dir.link_to or dir.absolute_path)
@@ -822,9 +897,21 @@ function Explorer:force_dirchange(foldername, should_open_view, should_init)
   log.profile_end(profile)
 end
 
+---Whether root changes are currently disallowed due to active workspace mode.
+---@return boolean
+function Explorer:workspace_restricts_root_change()
+  return self.workspace ~= nil and self.opts.workspace.restrict_root_change
+end
+
 ---@param input_cwd string
 ---@param with_open boolean|nil
 function Explorer:change_dir(input_cwd, with_open)
+  -- silently ignore automatic root-sync while a workspace is active;
+  -- explicit user actions notify at the api layer
+  if self:workspace_restricts_root_change() then
+    return
+  end
+
   local new_tabpage = vim.api.nvim_get_current_tabpage()
   if self:is_window_event(new_tabpage) then
     return

@@ -12,7 +12,8 @@ local TreeExplorer = nil
 local first_init_done = false
 
 ---@param foldername string
-function M.init(foldername)
+---@param workspace nvim_tree.Workspace? optional workspace descriptor to enter workspace mode
+function M.init(foldername, workspace)
   local profile = log.profile_start("core init %s", foldername)
 
   if TreeExplorer then
@@ -27,7 +28,7 @@ function M.init(foldername)
     path, err = vim.uv.cwd()
   end
   if path then
-    TreeExplorer = require("nvim-tree.explorer")({ path = path })
+    TreeExplorer = require("nvim-tree.explorer")({ path = path, workspace = workspace })
   else
     notify.error(err)
     TreeExplorer = nil
@@ -57,7 +58,7 @@ end
 ---@return integer
 function M.get_nodes_starting_line()
   local offset = 1
-  if view.is_root_folder_visible(M.get_cwd()) then
+  if view.is_root_folder_visible(M.get_cwd()) and not (TreeExplorer and TreeExplorer.workspace) then
     offset = offset + 1
   end
   if TreeExplorer and TreeExplorer.live_filter.filter then

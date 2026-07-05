@@ -54,6 +54,22 @@ function M.setup(config_user)
 
   vim.g.NvimTreeSetup = 1
   vim.api.nvim_exec_autocmds("User", { pattern = "NvimTreeSetup" })
+
+  -- maybe restore the last active workspace on a bare startup
+  if config.g.workspace.enable and config.g.workspace.restore_on_start then
+    if vim.v.vim_did_enter == 1 then
+      -- setup called after startup: restore now
+      require("nvim-tree.workspace").restore()
+    else
+      -- setup called during startup: restore once Nvim has entered
+      vim.api.nvim_create_autocmd("VimEnter", {
+        once = true,
+        callback = function()
+          require("nvim-tree.workspace").restore()
+        end,
+      })
+    end
+  end
 end
 
 vim.g.NvimTreeRequired = 1

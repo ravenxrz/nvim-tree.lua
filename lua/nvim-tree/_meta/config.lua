@@ -117,6 +117,9 @@ error("Cannot require a meta file")
 ---[nvim_tree.config.bookmarks]
 ---@field bookmarks? nvim_tree.config.bookmarks
 ---
+---[nvim_tree.config.workspace]
+---@field workspace? nvim_tree.config.workspace
+---
 ---[nvim_tree.config.notify]
 ---@field notify? nvim_tree.config.notify
 ---

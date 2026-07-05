@@ -491,6 +491,11 @@ end
 ---@param cwd string|nil
 ---@return boolean
 function M.is_root_folder_visible(cwd)
+  -- the synthetic root is hidden in workspace mode: folders are top-level nodes
+  local explorer = require("nvim-tree.core").get_explorer()
+  if explorer and explorer.workspace then
+    return false
+  end
   return cwd ~= "/" and config.g.renderer.root_folder_label ~= false
 end
 
